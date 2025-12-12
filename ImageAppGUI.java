@@ -1,6 +1,5 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
 
 /**
  * Simple GUI menu for image processing operations
@@ -57,7 +56,7 @@ public class ImageAppGUI extends JFrame {
         setJMenuBar(menuBar);
         
         // Image display area
-        imageLabel = new JLabel("No image loaded");
+        imageLabel = new JLabel("No image loaded", SwingConstants.CENTER);
         imageLabel.setHorizontalAlignment(JLabel.CENTER);
         add(imageLabel, BorderLayout.CENTER);
         
@@ -103,6 +102,26 @@ public class ImageAppGUI extends JFrame {
                 ImageApp.rotate180(pixels);
                 updateImage();
                 statusBar.setText("Image rotated 180°");
+            }
+        });
+        
+        rotate90Item.addActionListener(e -> {
+            if (currentPicture != null) {
+                Pixel[][] pixels = currentPicture.getPixels2D();
+                Pixel[][] rotated = ImageApp.rotate90(pixels);
+                currentPicture = ImageApp.pixelsToPicture(rotated);
+                updateImage();
+                statusBar.setText("Image rotated 90° CCW");
+            }
+        });
+        
+        rotateNeg90Item.addActionListener(e -> {
+            if (currentPicture != null) {
+                Pixel[][] pixels = currentPicture.getPixels2D();
+                Pixel[][] rotated = ImageApp.rotateNeg90(pixels);
+                currentPicture = ImageApp.pixelsToPicture(rotated);
+                updateImage();
+                statusBar.setText("Image rotated 90° CW");
             }
         });
         
