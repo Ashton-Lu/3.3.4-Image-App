@@ -52,6 +52,8 @@ public class FileChooser
     // if the return value says the user picked a file 
     if (returnVal == JFileChooser.APPROVE_OPTION)
       path = fileChooser.getSelectedFile().getPath();
+    
+    frame.dispose(); // Clean up the frame
     return path;
   }
   
@@ -97,26 +99,49 @@ public class FileChooser
    */
   public static String getMediaDirectory() 
   {
-
     String directory = null;
     File dirFile = null;
     
-    // try to find the images directory
-      try {
-        // get the URL for where we loaded this class 
-        URL classURL = Class.forName("FileChooser").getResource("FileChooser.class");
-        URL fileURL = new URL(classURL,"../images/");
-        directory = fileURL.getPath();
-        directory = URLDecoder.decode(directory, "UTF-8");
-        dirFile = new File(directory);
-        if (dirFile.exists()) {
-          //setMediaPath(directory);
-          return directory;
-        }
-      } catch (Exception ex) {
+    // First, try the current directory
+    try {
+      directory = System.getProperty("user.dir");
+      dirFile = new File(directory);
+      if (dirFile.exists()) {
+        return directory + File.separator;
       }
-      
-      return directory;
+    } catch (Exception ex) {
+    }
+    
+    // try to find the images directory
+    try {
+      // get the URL for where we loaded this class 
+      URL classURL = FileChooser.class.getResource("FileChooser.class");
+      if (classURL != null) {
+        // Use URI to avoid deprecated URL constructor
+        URI uri = classURL.toURI();
+        File classFile = new File(uri.getPath());
+        File parentDir = classFile.getParentFile();
+        File imagesDir = new File(parentDir, "images");
+        
+        if (imagesDir.exists()) {
+          return imagesDir.getPath() + File.separator;
+        }
+      }
+    } catch (Exception ex) {
+      // Fall through to default directory
+    }
+    
+    // Last resort: try current directory
+    return System.getProperty("user.dir") + File.separator;
   }
   
+  /**
+   * Main method for testing
+   * @param args command line arguments
+   */
+  public static void main(String[] args) {
+    System.out.println("Media directory: " + getMediaDirectory());
+    String file = pickAFile();
+    System.out.println("Selected file: " + file);
+  }
 }
