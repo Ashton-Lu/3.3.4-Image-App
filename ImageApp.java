@@ -3,117 +3,447 @@
   Includes recoloring, rotation, and image compositing
 */
 import java.awt.Color;
-import java.util.ArrayList;
+import java.util.Scanner;
+import java.io.File;
 
 public class ImageApp
 {
+  private static Scanner scanner = new Scanner(System.in);
+  
   /**
    * Main method to run all image processing operations
    * @param args command line arguments (not used)
    */
   public static void main(String[] args)
   {
-    // use any file from the lib folder
-    String pictureFile = "lib/beach.jpg";
-
-    // Get an image, get 2d array of pixels, show a color of a pixel, and display the image
-    Picture origImg = new Picture(pictureFile);
+    System.out.println("=== IMAGE PROCESSING APP ===");
+    System.out.println("Current working directory: " + System.getProperty("user.dir"));
+    
+    boolean running = true;
+    while (running) {
+      displayMenu();
+      int choice = getIntInput("Enter your choice (1-11): ");
+      
+      switch (choice) {
+        case 1:
+          testOriginalImage();
+          break;
+        case 2:
+          recolorImage();
+          break;
+        case 3:
+          createNegativeImage();
+          break;
+        case 4:
+          createGrayscaleImage();
+          break;
+        case 5:
+          rotate180();
+          break;
+        case 6:
+          rotate90Counterclockwise();
+          break;
+        case 7:
+          rotate90Clockwise();
+          break;
+        case 8:
+          insertImageInteractive();
+          break;
+        case 9:
+          testVectorMatrixOperations();
+          break;
+        case 10:
+          test2DArrayAlgorithms();
+          break;
+        case 11:
+          running = false;
+          System.out.println("Goodbye!");
+          break;
+        default:
+          System.out.println("Invalid choice. Please try again.");
+      }
+      
+      if (choice != 11) {
+        System.out.println("\nPress Enter to continue...");
+        scanner.nextLine();
+      }
+    }
+    
+    scanner.close();
+  }
+  
+  /**
+   * Displays the main menu
+   */
+  private static void displayMenu() {
+    System.out.println("\n=== MAIN MENU ===");
+    System.out.println("1. View Original Image");
+    System.out.println("2. Recolor Image (BRG)");
+    System.out.println("3. Create Negative Image");
+    System.out.println("4. Create Grayscale Image");
+    System.out.println("5. Rotate 180 Degrees");
+    System.out.println("6. Rotate 90° Counterclockwise");
+    System.out.println("7. Rotate 90° Clockwise");
+    System.out.println("8. Insert Small Image onto Large Image");
+    System.out.println("9. Test Vector/Matrix Operations");
+    System.out.println("10. Test 2D Array Algorithms");
+    System.out.println("11. Exit");
+    System.out.println("=================");
+  }
+  
+  /**
+   * Gets integer input from user
+   * @param prompt the prompt to display
+   * @return the integer input
+   */
+  private static int getIntInput(String prompt) {
+    System.out.print(prompt);
+    while (!scanner.hasNextInt()) {
+      System.out.println("Please enter a valid number!");
+      scanner.next();
+      System.out.print(prompt);
+    }
+    int input = scanner.nextInt();
+    scanner.nextLine(); // Consume newline
+    return input;
+  }
+  
+  /**
+   * Gets string input from user
+   * @param prompt the prompt to display
+   * @return the string input
+   */
+  private static String getStringInput(String prompt) {
+    System.out.print(prompt);
+    return scanner.nextLine();
+  }
+  
+  /**
+   * Loads a picture with error handling
+   * @param filename the filename to load
+   * @return the Picture object, or null if failed
+   */
+  private static Picture loadPicture(String filename) {
+    try {
+      System.out.println("Loading: " + filename);
+      File file = new File(filename);
+      if (!file.exists()) {
+        System.out.println("ERROR: File not found: " + filename);
+        System.out.println("Looking in: " + file.getAbsolutePath());
+        return null;
+      }
+      Picture picture = new Picture(filename);
+      System.out.println("Successfully loaded: " + filename + " (" + 
+                         picture.getWidth() + "x" + picture.getHeight() + ")");
+      return picture;
+    } catch (Exception e) {
+      System.out.println("ERROR loading " + filename + ": " + e.getMessage());
+      return null;
+    }
+  }
+  
+  /**
+   * Test option 1: View original image
+   */
+  private static void testOriginalImage() {
+    System.out.println("\n=== VIEWING ORIGINAL IMAGE ===");
+    String pictureFile = getImageFileChoice();
+    Picture origImg = loadPicture(pictureFile);
+    if (origImg == null) {
+      System.out.println("Could not load image. Please check the filename.");
+      return;
+    }
     Pixel[][] origPixels = origImg.getPixels2D();
     System.out.println("Original pixel color at (0,0): " + origPixels[0][0].getColor());
     origImg.explore();
-
-    // Image #1 Using the original image and pixels, recolor an image by changing the RGB color of each Pixel
-    Picture recoloredImg = new Picture(pictureFile);
+  }
+  
+  /**
+   * Test option 2: Recolor image
+   */
+  private static void recolorImage() {
+    System.out.println("\n=== RECOLORING IMAGE (BRG) ===");
+    String pictureFile = getImageFileChoice();
+    Picture recoloredImg = loadPicture(pictureFile);
+    if (recoloredImg == null) {
+      System.out.println("Could not load image. Please check the filename.");
+      return;
+    }
     Pixel[][] recoloredPixels = recoloredImg.getPixels2D();
     changeColor(recoloredPixels);
     recoloredImg.explore();
     
-    // Save recolored image
-    recoloredImg.write("recolored_beach.jpg");
-
-    // Image #2 Using the original image and pixels, create a photographic negative of the image
-    Picture negImg = new Picture(pictureFile);
+    String saveChoice = getStringInput("Save this image? (yes/no): ");
+    if (saveChoice.equalsIgnoreCase("yes")) {
+      String filename = getStringInput("Enter filename (without extension): ");
+      boolean saved = recoloredImg.write(filename + ".jpg");
+      if (saved) {
+        System.out.println("Image saved as " + filename + ".jpg");
+      } else {
+        System.out.println("Failed to save image.");
+      }
+    }
+  }
+  
+  /**
+   * Test option 3: Create negative image
+   */
+  private static void createNegativeImage() {
+    System.out.println("\n=== CREATING NEGATIVE IMAGE ===");
+    String pictureFile = getImageFileChoice();
+    Picture negImg = loadPicture(pictureFile);
+    if (negImg == null) {
+      System.out.println("Could not load image. Please check the filename.");
+      return;
+    }
     Pixel[][] negPixels = negImg.getPixels2D();
     negativeColor(negPixels);
     negImg.explore();
     
-    // Save negative image
-    negImg.write("negative_beach.jpg");
-
-    // Image #3 Using the original image and pixels, create a grayscale version of the image
-    Picture grayscaleImg = new Picture(pictureFile);
+    String saveChoice = getStringInput("Save this image? (yes/no): ");
+    if (saveChoice.equalsIgnoreCase("yes")) {
+      String filename = getStringInput("Enter filename (without extension): ");
+      boolean saved = negImg.write(filename + ".jpg");
+      if (saved) {
+        System.out.println("Image saved as " + filename + ".jpg");
+      } else {
+        System.out.println("Failed to save image.");
+      }
+    }
+  }
+  
+  /**
+   * Test option 4: Create grayscale image
+   */
+  private static void createGrayscaleImage() {
+    System.out.println("\n=== CREATING GRAYSCALE IMAGE ===");
+    String pictureFile = getImageFileChoice();
+    Picture grayscaleImg = loadPicture(pictureFile);
+    if (grayscaleImg == null) {
+      System.out.println("Could not load image. Please check the filename.");
+      return;
+    }
     Pixel[][] grayscalePixels = grayscaleImg.getPixels2D();
     grayscale(grayscalePixels);
     grayscaleImg.explore();
     
-    // Save grayscale image
-    grayscaleImg.write("grayscale_beach.jpg");
-
-    // Image #4 Using the original image and pixels, rotate it 180 degrees
-    Picture upsidedownImage = new Picture(pictureFile);
+    String saveChoice = getStringInput("Save this image? (yes/no): ");
+    if (saveChoice.equalsIgnoreCase("yes")) {
+      String filename = getStringInput("Enter filename (without extension): ");
+      boolean saved = grayscaleImg.write(filename + ".jpg");
+      if (saved) {
+        System.out.println("Image saved as " + filename + ".jpg");
+      } else {
+        System.out.println("Failed to save image.");
+      }
+    }
+  }
+  
+  /**
+   * Test option 5: Rotate 180 degrees
+   */
+  private static void rotate180() {
+    System.out.println("\n=== ROTATING 180 DEGREES ===");
+    String pictureFile = getImageFileChoice();
+    Picture upsidedownImage = loadPicture(pictureFile);
+    if (upsidedownImage == null) {
+      System.out.println("Could not load image. Please check the filename.");
+      return;
+    }
     Pixel[][] upsideDownPixels = upsidedownImage.getPixels2D();
     rotate180(upsideDownPixels);
     upsidedownImage.explore();
     
-    // Save rotated image
-    upsidedownImage.write("rotated180_beach.jpg");
-
-    // Image #5 Using the original image and pixels, rotate image 90 degrees counterclockwise
-    Picture rotateImg = new Picture(pictureFile);
+    String saveChoice = getStringInput("Save this image? (yes/no): ");
+    if (saveChoice.equalsIgnoreCase("yes")) {
+      String filename = getStringInput("Enter filename (without extension): ");
+      boolean saved = upsidedownImage.write(filename + ".jpg");
+      if (saved) {
+        System.out.println("Image saved as " + filename + ".jpg");
+      } else {
+        System.out.println("Failed to save image.");
+      }
+    }
+  }
+  
+  /**
+   * Test option 6: Rotate 90 degrees counterclockwise
+   */
+  private static void rotate90Counterclockwise() {
+    System.out.println("\n=== ROTATING 90° COUNTERCLOCKWISE ===");
+    String pictureFile = getImageFileChoice();
+    Picture rotateImg = loadPicture(pictureFile);
+    if (rotateImg == null) {
+      System.out.println("Could not load image. Please check the filename.");
+      return;
+    }
     Pixel[][] rotatePixels = rotateImg.getPixels2D();
     Pixel[][] rotated90 = rotate90(rotatePixels);
     Picture rotated90Picture = pixelsToPicture(rotated90);
     rotated90Picture.explore();
     
-    // Save rotated image
-    rotated90Picture.write("rotated90_beach.jpg");
-
-    // Image #6 Using the original image and pixels, rotate image -90 degrees (90 clockwise)
-    Picture rotateImg2 = new Picture(pictureFile);
+    String saveChoice = getStringInput("Save this image? (yes/no): ");
+    if (saveChoice.equalsIgnoreCase("yes")) {
+      String filename = getStringInput("Enter filename (without extension): ");
+      boolean saved = rotated90Picture.write(filename + ".jpg");
+      if (saved) {
+        System.out.println("Image saved as " + filename + ".jpg");
+      } else {
+        System.out.println("Failed to save image.");
+      }
+    }
+  }
+  
+  /**
+   * Test option 7: Rotate 90 degrees clockwise
+   */
+  private static void rotate90Clockwise() {
+    System.out.println("\n=== ROTATING 90° CLOCKWISE ===");
+    String pictureFile = getImageFileChoice();
+    Picture rotateImg2 = loadPicture(pictureFile);
+    if (rotateImg2 == null) {
+      System.out.println("Could not load image. Please check the filename.");
+      return;
+    }
     Pixel[][] rotatePixels2 = rotateImg2.getPixels2D();
     Pixel[][] rotatedNeg90 = rotateNeg90(rotatePixels2);
     Picture rotatedNeg90Picture = pixelsToPicture(rotatedNeg90);
     rotatedNeg90Picture.explore();
     
-    // Save rotated image
-    rotatedNeg90Picture.write("rotatedNeg90_beach.jpg");
-
-    // Final Image: Add a small image to a larger one
-    Picture finalImage = new Picture(pictureFile);
-    Pixel[][] finalPixels = finalImage.getPixels2D();
+    String saveChoice = getStringInput("Save this image? (yes/no): ");
+    if (saveChoice.equalsIgnoreCase("yes")) {
+      String filename = getStringInput("Enter filename (without extension): ");
+      boolean saved = rotatedNeg90Picture.write(filename + ".jpg");
+      if (saved) {
+        System.out.println("Image saved as " + filename + ".jpg");
+      } else {
+        System.out.println("Failed to save image.");
+      }
+    }
+  }
+  
+  /**
+   * Test option 8: Insert small image onto large image
+   */
+  private static void insertImageInteractive() {
+    System.out.println("\n=== INSERTING SMALL IMAGE ONTO LARGE IMAGE ===");
     
-    // Load a small image to insert
-    Picture smallImage = new Picture("lib/robot.jpg");
+    System.out.println("Choose large image:");
+    String largeFile = getImageFileChoice();
+    Picture finalImage = loadPicture(largeFile);
+    if (finalImage == null) {
+      System.out.println("Could not load large image.");
+      return;
+    }
+    
+    System.out.println("Choose small image to insert:");
+    String smallFile = getImageFileChoice();
+    Picture smallImage = loadPicture(smallFile);
+    if (smallImage == null) {
+      System.out.println("Could not load small image.");
+      return;
+    }
+    
+    int startRow = getIntInput("Enter starting row position: ");
+    int startCol = getIntInput("Enter starting column position: ");
+    
+    Pixel[][] finalPixels = finalImage.getPixels2D();
     Pixel[][] smallPixels = smallImage.getPixels2D();
     
-    // Insert small image at position (100, 100)
-    insertImage(finalPixels, smallPixels, 100, 100);
+    insertImage(finalPixels, smallPixels, startRow, startCol);
     finalImage.explore();
     
-    // Save final image
-    finalImage.write("final_composite_beach.jpg");
+    String saveChoice = getStringInput("Save this composite image? (yes/no): ");
+    if (saveChoice.equalsIgnoreCase("yes")) {
+      String filename = getStringInput("Enter filename (without extension): ");
+      boolean saved = finalImage.write(filename + ".jpg");
+      if (saved) {
+        System.out.println("Composite image saved as " + filename + ".jpg");
+      } else {
+        System.out.println("Failed to save image.");
+      }
+    }
+  }
+  
+  /**
+   * Test option 10: Test 2D array algorithms
+   */
+  private static void test2DArrayAlgorithms() {
+    System.out.println("\n=== TESTING 2D ARRAY ALGORITHMS ===");
     
-    // Test matrix and vector operations
-    System.out.println("\n=== Testing Vector and Matrix Operations ===");
-    testVectorMatrixOperations();
-
-    // Test 2D array algorithms
-    System.out.println("\n=== Testing 2D Array Algorithms ===");
     int[][] test1 = { { 1, 2, 3, 4 },
         { 5, 6, 7, 8 },
         { 9, 10, 11, 12 },
         { 13, 14, 15, 16 } };
     int[][] test2 = new int[4][4];
     
-    // Test array copying
+    System.out.println("Original 2D array:");
+    print2DArray(test1);
+    
+    System.out.println("\nCopied 2D array:");
     copy2DArray(test1, test2);
     print2DArray(test2);
     
-    // Test array rotation using matrix multiplication
+    System.out.println("\nRotated 2D array (90° counterclockwise):");
     int[][] rotated = rotate2DArray(test1);
-    System.out.println("Rotated 2D array:");
     print2DArray(rotated);
   }
+  
+  /**
+   * Gets image file choice from user
+   * @return the selected image file path
+   */
+  private static String getImageFileChoice() {
+    System.out.println("\nAvailable images:");
+    System.out.println("1. beach.jpg (in lib/ folder)");
+    System.out.println("2. robot.jpg (in lib/ folder)");
+    System.out.println("3. swan.jpg (in lib/ folder)");
+    System.out.println("4. caterpillar.jpg (in lib/ folder)");
+    System.out.println("5. flower1.jpg (in lib/ folder)");
+    System.out.println("6. flower2.jpg (in lib/ folder)");
+    System.out.println("7. temple.jpg (in lib/ folder)");
+    System.out.println("8. Enter custom filename");
+    System.out.println("9. Use default test image (640x480.jpg)");
+    
+    int choice = getIntInput("Choose image (1-9): ");
+    
+    switch (choice) {
+      case 1: return checkFileExists("lib/beach.jpg", "images/beach.jpg", "beach.jpg");
+      case 2: return checkFileExists("lib/robot.jpg", "images/robot.jpg", "robot.jpg");
+      case 3: return checkFileExists("lib/swan.jpg", "images/swan.jpg", "swan.jpg");
+      case 4: return checkFileExists("lib/caterpillar.jpg", "images/caterpillar.jpg", "caterpillar.jpg");
+      case 5: return checkFileExists("lib/flower1.jpg", "images/flower1.jpg", "flower1.jpg");
+      case 6: return checkFileExists("lib/flower2.jpg", "images/flower2.jpg", "flower2.jpg");
+      case 7: return checkFileExists("lib/temple.jpg", "images/temple.jpg", "temple.jpg");
+      case 8:
+        String customFile = getStringInput("Enter filename (e.g., 'myimage.jpg' or 'lib/myimage.jpg'): ");
+        return customFile;
+      case 9:
+        return "640x480.jpg"; // Default test image that should exist
+      default:
+        System.out.println("Invalid choice, trying beach.jpg");
+        return checkFileExists("lib/beach.jpg", "images/beach.jpg", "beach.jpg");
+    }
+  }
+  
+  /**
+   * Checks if a file exists in multiple possible locations
+   * @param paths varargs of possible file paths to check
+   * @return the first path that exists, or the first path if none exist
+   */
+  private static String checkFileExists(String... paths) {
+    for (String path : paths) {
+      File file = new File(path);
+      if (file.exists()) {
+        System.out.println("Found: " + path);
+        return path;
+      }
+    }
+    System.out.println("Warning: Could not find file. Trying: " + paths[0]);
+    return paths[0];
+  }
+  
+  // ====== ALL THE ORIGINAL IMAGE PROCESSING METHODS BELOW ======
   
   /**
    * Changes the color of an image by swapping RGB channels (BRG variation)
@@ -194,7 +524,7 @@ public class ImageApp
   }
   
   /**
-   * Rotates an image 90 degrees counterclockwise using matrix multiplication
+   * Rotates an image 90 degrees counterclockwise
    * @param pixels 2D array of pixels to rotate
    * @return new 2D array of rotated pixels
    */
@@ -206,49 +536,15 @@ public class ImageApp
     // Create new array with swapped dimensions
     Pixel[][] rotated = new Pixel[width][height];
     
-    // Create rotation matrix for -90 degrees (which is 90 counterclockwise)
-    Matrix2by2 rotMatrix = new Matrix2by2();
-    rotMatrix.setRotationMatrix(-90);
-    
-    // Center of rotation
-    Vector1by2 center = new Vector1by2(height / 2.0, width / 2.0);
-    
     for (int row = 0; row < height; row++) {
       for (int col = 0; col < width; col++) {
-        // Convert to vector relative to center
-        Vector1by2 v = new Vector1by2(row - center.getRow(), col - center.getCol());
+        int targetRow = col;
+        int targetCol = height - 1 - row;
         
-        // Apply rotation
-        Vector1by2 rotatedV = rotMatrix.multiply(v);
-        
-        // Convert back to absolute coordinates
-        int newRow = (int)Math.round(rotatedV.getRow() + center.getRow());
-        int newCol = (int)Math.round(rotatedV.getCol() + center.getCol());
-        
-        // Adjust for new array dimensions (swap rows and columns)
-        int targetRow = col;  // Original column becomes new row
-        int targetCol = height - 1 - row;  // Original row becomes new column (reversed)
-        
-        // Ensure we're within bounds
-        if (targetRow >= 0 && targetRow < width && targetCol >= 0 && targetCol < height) {
-          if (rotated[targetRow] == null) {
-            rotated[targetRow] = new Pixel[height];
-          }
-          rotated[targetRow][targetCol] = pixels[row][col];
+        if (rotated[targetRow] == null) {
+          rotated[targetRow] = new Pixel[height];
         }
-      }
-    }
-    
-    // Fill any null pixels with black
-    for (int row = 0; row < width; row++) {
-      for (int col = 0; col < height; col++) {
-        if (rotated[row][col] == null) {
-          // Create a black pixel
-          Picture tempPic = new Picture(1, 1);
-          Pixel[][] tempPixels = tempPic.getPixels2D();
-          tempPixels[0][0].setColor(Color.BLACK);
-          rotated[row][col] = tempPixels[0][0];
-        }
+        rotated[targetRow][targetCol] = pixels[row][col];
       }
     }
     
@@ -256,7 +552,7 @@ public class ImageApp
   }
   
   /**
-   * Rotates an image -90 degrees (90 clockwise) using matrix multiplication
+   * Rotates an image -90 degrees (90 clockwise)
    * @param pixels 2D array of pixels to rotate
    * @return new 2D array of rotated pixels
    */
@@ -268,49 +564,15 @@ public class ImageApp
     // Create new array with swapped dimensions
     Pixel[][] rotated = new Pixel[width][height];
     
-    // Create rotation matrix for 90 degrees (clockwise)
-    Matrix2by2 rotMatrix = new Matrix2by2();
-    rotMatrix.setRotationMatrix(90);
-    
-    // Center of rotation
-    Vector1by2 center = new Vector1by2(height / 2.0, width / 2.0);
-    
     for (int row = 0; row < height; row++) {
       for (int col = 0; col < width; col++) {
-        // Convert to vector relative to center
-        Vector1by2 v = new Vector1by2(row - center.getRow(), col - center.getCol());
+        int targetRow = width - 1 - col;
+        int targetCol = row;
         
-        // Apply rotation
-        Vector1by2 rotatedV = rotMatrix.multiply(v);
-        
-        // Convert back to absolute coordinates
-        int newRow = (int)Math.round(rotatedV.getRow() + center.getRow());
-        int newCol = (int)Math.round(rotatedV.getCol() + center.getCol());
-        
-        // Adjust for new array dimensions (swap rows and columns)
-        int targetRow = width - 1 - col;  // Original column becomes new row (reversed)
-        int targetCol = row;  // Original row becomes new column
-        
-        // Ensure we're within bounds
-        if (targetRow >= 0 && targetRow < width && targetCol >= 0 && targetCol < height) {
-          if (rotated[targetRow] == null) {
-            rotated[targetRow] = new Pixel[height];
-          }
-          rotated[targetRow][targetCol] = pixels[row][col];
+        if (rotated[targetRow] == null) {
+          rotated[targetRow] = new Pixel[height];
         }
-      }
-    }
-    
-    // Fill any null pixels with black
-    for (int row = 0; row < width; row++) {
-      for (int col = 0; col < height; col++) {
-        if (rotated[row][col] == null) {
-          // Create a black pixel
-          Picture tempPic = new Picture(1, 1);
-          Pixel[][] tempPixels = tempPic.getPixels2D();
-          tempPixels[0][0].setColor(Color.BLACK);
-          rotated[row][col] = tempPixels[0][0];
-        }
+        rotated[targetRow][targetCol] = pixels[row][col];
       }
     }
     
@@ -379,6 +641,7 @@ public class ImageApp
    * Tests vector and matrix operations with sample data
    */
   public static void testVectorMatrixOperations() {
+    System.out.println("\n=== TESTING VECTOR AND MATRIX OPERATIONS ===");
     // Test Vector operations
     Vector1by2 v1 = new Vector1by2(3, 4);
     Vector1by2 v2 = new Vector1by2(1, 2);
